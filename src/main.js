@@ -9,7 +9,8 @@ import "babel-polyfill";
 
 Vue.use(ElementUI, { size: 'small' });
 
-axios.defaults.baseURL = "http://localhost:9001/"
+axios.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded';
+axios.defaults.baseURL = "http://localhost:9003/"
 Vue.prototype.$axios = axios;
 
 //使用钩子函数对路由进行权限跳转

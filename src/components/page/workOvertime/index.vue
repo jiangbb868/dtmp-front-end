@@ -25,7 +25,7 @@
                 </el-table-column>  
                 <el-table-column prop="timeSpan" label="加班时长(小时)" width="120">
                 </el-table-column>                               
-                <el-table-column prop="reason" label="加班事由" :formatter="formatter">
+                <el-table-column prop="reason" label="加班事由" width="210">
                 </el-table-column>
                 <el-table-column label="操作" width="180">
                     <template slot-scope="scope">
@@ -47,7 +47,7 @@
                     <el-date-picker type="date" placeholder="选择日期" v-model="form.date" value-format="yyyy-MM-dd" style="width: 100%;"></el-date-picker>
                 </el-form-item>
                 <el-form-item label="姓           名">
-                    <el-input v-model="form.name"></el-input>
+                    <el-input v-model="form.userId"></el-input>
                 </el-form-item>
                 <el-form-item label="开始时间">
                     <el-input v-model="form.startTime"></el-input>
@@ -92,7 +92,7 @@
                 delVisible: false,
                 operType: '添加加班记录',
                 form: {
-                    name: '',
+                    userId: '',
                     startTime: '',
                     stopTime: '',
                     timeSpan: '',
@@ -108,20 +108,26 @@
             data() {
                 return this.tableData.filter((d) => {
                     let is_del = false;
+                    /*
                     for (let i = 0; i < this.del_list.length; i++) {
-                        if (d.name === this.del_list[i].name) {
+                        alert(this.del_list);
+                        if (d.userId === this.del_list[i].userId) {
                             is_del = true;
                             break;
                         }
                     }
                     if (!is_del) {
                         if (d.address.indexOf(this.select_cate) > -1 &&
-                            (d.name.indexOf(this.select_word) > -1 ||
+                            (d.userId.indexOf(this.select_word) > -1 ||
                                 d.address.indexOf(this.select_word) > -1)
                         ) {
+                            alert(d);
                             return d;
                         }
                     }
+                    */
+                    d.timeSpan = d.stopTime - d.startTime;
+                    return d;
                 })
             }
         },
@@ -135,12 +141,16 @@
             getData() {
                 // 开发环境使用 easy-mock 数据，正式环境使用 json 文件
                 if (process.env.NODE_ENV === 'development') {
-                    this.url = '/attendance/workOvertime/list';
+                    this.url = '/work/overtime/getList';
                 };
-                this.$axios.post(this.url, {
-                    page: this.cur_page
+                this.$axios.get(this.url, {
+                    params: {
+                        userId: "1"
+                    }
                 }).then((res) => {
-                    this.tableData = res.data.list;
+                    // alert(res.data.status + res.data.message);
+                    // alert(res.data.data[0].startTime);
+                    this.tableData = res.data.data;
                 })
             },
             search() {
@@ -156,7 +166,7 @@
                 this.idx = index;
                 const item = this.tableData[index];
                 this.form = {
-                    name: item.name,
+                    userId: item.userId,
                     date: item.date,
                     startTime: item.startTime,
                     stopTime: item.stopTime,
@@ -167,7 +177,7 @@
             },
             handleAdd() {
                 this.form = {
-                    name: '',
+                    userId: '',
                     date: '',
                     startTime: '',
                     stopTime: '',
@@ -185,7 +195,7 @@
                 let str = '';
                 this.del_list = this.del_list.concat(this.multipleSelection);
                 for (let i = 0; i < length; i++) {
-                    str += this.multipleSelection[i].name + ' ';
+                    str += this.multipleSelection[i].userId + ' ';
                 }
                 this.$message.error('删除了' + str);
                 this.multipleSelection = [];
@@ -195,15 +205,35 @@
             },
             // 保存编辑
             saveEdit() {
-                this.$set(this.tableData, this.idx, this.form);
+                //this.$set(this.tableData, this.idx, this.form);
                 this.editVisible = false;
-                this.$message.success(`修改第 ${this.idx+1} 行成功`);
+                const item = this.tableData[this.idx];
+                const data = {
+                    workOvertimeId: 1,
+                    date: item.date,
+                    userId: item.userId,
+                    startTime: '2018-05-24 17:00:00',
+                    stopTime: '2018-05-24 20:30:00',
+                    reason: item.reason                    
+                }
+                this.$axios.post('/work/overtime/add', data).then((res) => {
+                    getData();
+                    this.$message.success(`修改第 ${this.idx+1} 行成功`);
+                })
+                
             },
             // 确定删除
             deleteRow(){
                 this.tableData.splice(this.idx, 1);
-                this.$message.success('删除成功');
                 this.delVisible = false;
+                const item = this.tableData[this.idx];
+                const data = {
+                    workOvertimeId: 1
+                }
+                this.$axios.post('/work/overtime/delete', data).then((res) => {
+                    getData();
+                    this.$message.success('删除成功');
+                })
             }
         }
     }
